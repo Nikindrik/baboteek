@@ -1,0 +1,13 @@
+[project]
+name = "baboteek-backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.136.1",
+    "passlib[bcrypt]>=1.7.4",
+    "python-jose[cryptography]>=3.5.0",
+    "python-multipart>=0.0.26",
+    "uvicorn[standard]>=0.46.0",
+]
