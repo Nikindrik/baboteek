@@ -1,9 +1,8 @@
-from config import Settings
+from fastapi import FastAPI
+import uvicorn
+from baboteek_api.config import settings
 
-def main():
-    s = Settings()
-    print(s)
-
+app = FastAPI(title=settings.app_name)
 
 if __name__ == "__main__":
-    main()
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
