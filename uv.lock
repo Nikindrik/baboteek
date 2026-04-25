@@ -92,6 +92,8 @@ version = "0.1.0"
 source = { editable = "baboteek-api" }
 dependencies = [
     { name = "asyncpg" },
+    { name = "baboteek-core" },
+    { name = "bcrypt" },
     { name = "fastapi", extra = ["standard"] },
     { name = "passlib", extra = ["bcrypt"] },
     { name = "pydantic-settings" },
@@ -104,6 +106,8 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "asyncpg", specifier = ">=0.31.0" },
+    { name = "baboteek-core", editable = "baboteek-core" },
+    { name = "bcrypt", specifier = ">=5.0.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.136.1" },
     { name = "passlib", extras = ["bcrypt"], specifier = ">=1.7.4" },
     { name = "pydantic-settings", specifier = ">=2.14.0" },
