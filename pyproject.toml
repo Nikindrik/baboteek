@@ -15,3 +15,8 @@ members = [
 [tool.uv.sources]
 baboteek-core = { workspace = true }
 baboteek-api = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.12",
+]

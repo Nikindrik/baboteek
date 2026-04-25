@@ -45,14 +45,18 @@ class TokenStream:
     def expect(self, token_type: str, value: str | None = None) -> Token:
         token = self.current()
         if token is None:
-            raise ParseError(f"Unexpected EOF. Expected {token_type} '{value or ''}'", None)
+            raise ParseError(
+                f"Unexpected EOF. Expected {token_type} '{value or ''}'", None
+            )
 
         if token.type_ == token_type and (value is None or token.value == value):
             self.advance()
             return token
 
         expected = f"{token_type} '{value}'" if value else token_type
-        raise ParseError(f"Expected {expected}, but got {token.type_} '{token.value}'", token)
+        raise ParseError(
+            f"Expected {expected}, but got {token.type_} '{token.value}'", token
+        )
 
 
 class ExpressionParser:
@@ -91,7 +95,9 @@ class ExpressionParser:
                 self.stream.advance()
                 self.parse_factor()
             case _:
-                raise ParseError(f"Unexpected token in expression: '{token.value}'", token)
+                raise ParseError(
+                    f"Unexpected token in expression: '{token.value}'", token
+                )
 
     def _parse_number(self) -> None:
         token = self.stream.current()
@@ -113,13 +119,19 @@ class ExpressionParser:
         return t.value.endswith(("b", "B")) and all(c in "01" for c in t.value[:-1])
 
     def _is_octal(self, t: Token) -> bool:
-        return t.value.endswith(("o", "O")) and all(c in "01234567" for c in t.value[:-1])
+        return t.value.endswith(("o", "O")) and all(
+            c in "01234567" for c in t.value[:-1]
+        )
 
     def _is_decimal(self, t: Token) -> bool:
-        return t.value.isdigit() or (t.value.endswith(("d", "D")) and t.value[:-1].isdigit())
+        return t.value.isdigit() or (
+            t.value.endswith(("d", "D")) and t.value[:-1].isdigit()
+        )
 
     def _is_hexadecimal(self, t: Token) -> bool:
-        return t.value.endswith(("h", "H")) and all(c in "0123456789ABCDEFabcdef" for c in t.value[:-1])
+        return t.value.endswith(("h", "H")) and all(
+            c in "0123456789ABCDEFabcdef" for c in t.value[:-1]
+        )
 
     def _is_real(self, t: Token) -> bool:
         try:
@@ -156,7 +168,9 @@ class StatementParser:
                 case ("KEYWORD", "end"):
                     return
                 case _:
-                    raise ParseError(f"Unexpected statement start: '{token.value}'", token)
+                    raise ParseError(
+                        f"Unexpected statement start: '{token.value}'", token
+                    )
 
     def _parse_compound_statement(self) -> None:
         self.stream.expect("KEYWORD", "begin")
@@ -175,7 +189,11 @@ class StatementParser:
         else:
             self.stream.expect("ID")
 
-        while (token := self.stream.current()) and token.type_ == "DELIMITER" and token.value == ",":
+        while (
+            (token := self.stream.current())
+            and token.type_ == "DELIMITER"
+            and token.value == ","
+        ):
             self.stream.expect("DELIMITER", ",")
             if is_expr:
                 self.expr_parser.parse_expression()
@@ -189,7 +207,11 @@ class StatementParser:
         self.stream.expect("DELIMITER", ")")
         self._parse_compound_statement()
 
-        if (token := self.stream.current()) and token.type_ == "KEYWORD" and token.value == "else":
+        if (
+            (token := self.stream.current())
+            and token.type_ == "KEYWORD"
+            and token.value == "else"
+        ):
             self.stream.advance()
             self._parse_compound_statement()
 
@@ -238,7 +260,11 @@ class DeclarationParser:
     def _parse_var_decl(self) -> None:
         while True:
             self.stream.expect("ID")
-            while (token := self.stream.current()) and token.type_ == "DELIMITER" and token.value == ",":
+            while (
+                (token := self.stream.current())
+                and token.type_ == "DELIMITER"
+                and token.value == ","
+            ):
                 self.stream.expect("DELIMITER", ",")
                 self.stream.expect("ID")
 
@@ -270,9 +296,13 @@ class SyntaxAnalyzer:
         except ParseError as e:
             self.result.is_success = False
             if e.token:
-                self.result.error = ParserErrorMetadata(e.message, e.token.row, e.token.column, e.token.value)
+                self.result.error = ParserErrorMetadata(
+                    e.message, e.token.row, e.token.column, e.token.value
+                )
             else:
                 last = self.stream.tokens[-1]
-                self.result.error = ParserErrorMetadata(e.message, last.row, last.column, "EOF")
+                self.result.error = ParserErrorMetadata(
+                    e.message, last.row, last.column, "EOF"
+                )
 
         return self.result

@@ -145,7 +145,9 @@ class StateIDHandler(StateHandler):
         row, col = analyzer.reader.row, analyzer.reader.col
         lexeme = []
 
-        while (char := analyzer.reader.current_char) and (char.isalnum() or char == "_"):
+        while (char := analyzer.reader.current_char) and (
+            char.isalnum() or char == "_"
+        ):
             lexeme.append(char)
             analyzer.reader.advance()
 
@@ -181,7 +183,9 @@ class StateNumHandler(StateHandler):
         analyzer.add_token("NUMBER", "".join(lexeme), row, col)
         analyzer.state = LexerState.H
 
-    def _consume_digits(self, reader: SourceReader, lexeme: list[str], *, hex_allowed: bool) -> None:
+    def _consume_digits(
+        self, reader: SourceReader, lexeme: list[str], *, hex_allowed: bool
+    ) -> None:
         while char := reader.current_char:
             if char.isdigit() or (hex_allowed and char in "ABCDEFabcdef"):
                 lexeme.append(char)
@@ -296,7 +300,9 @@ class StateDelimHandler(StateHandler):
         else:
             token_type = analyzer.rules.get_operator_type(lexeme)
             if token_type == "UNKNOWN":
-                analyzer.add_error("UNEXPECTED_CHAR", f"Unexpected character: '{lexeme}'", row, col)
+                analyzer.add_error(
+                    "UNEXPECTED_CHAR", f"Unexpected character: '{lexeme}'", row, col
+                )
             else:
                 analyzer.add_token(token_type, lexeme, row, col)
 
@@ -328,14 +334,18 @@ class LexicalAnalyzer:
         while self.state != LexerState.END:
             handler = self.handlers.get(self.state)
             if not handler:
-                raise RuntimeError(f"Internal bug: No handler registered for state {self.state}")
+                raise RuntimeError(
+                    f"Internal bug: No handler registered for state {self.state}"
+                )
 
             handler.handle(self)
 
         return self.result
 
 
-def create_default_lexer(source: str | TextIO, buffer_size: int = 4096) -> LexicalAnalyzer:
+def create_default_lexer(
+    source: str | TextIO, buffer_size: int = 4096
+) -> LexicalAnalyzer:
     rules = LanguageRules(
         keywords={
             "program",
@@ -376,4 +386,6 @@ def create_default_lexer(source: str | TextIO, buffer_size: int = 4096) -> Lexic
         LexerState.DELIM: StateDelimHandler(),
     }
 
-    return LexicalAnalyzer(source, rules=rules, handlers=handlers, buffer_size=buffer_size)
+    return LexicalAnalyzer(
+        source, rules=rules, handlers=handlers, buffer_size=buffer_size
+    )
