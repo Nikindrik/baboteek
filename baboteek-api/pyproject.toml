@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "asyncpg>=0.31.0",
+    "baboteek-core",
+    "bcrypt>=5.0.0",
     "fastapi[standard]>=0.136.1",
     "passlib[bcrypt]>=1.7.4",
     "pydantic-settings>=2.14.0",
@@ -14,3 +16,6 @@ dependencies = [
     "sqlalchemy>=2.0.49",
     "uvicorn[standard]>=0.46.0",
 ]
+
+[tool.uv.sources]
+baboteek-core = { workspace = true }
