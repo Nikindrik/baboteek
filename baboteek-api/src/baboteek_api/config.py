@@ -10,4 +10,5 @@ class Settings(BaseSettings):
     # Автоматически ищет .env в корне проекта
     model_config = SettingsConfigDict(env_file=".env")
 
+
 settings = Settings()

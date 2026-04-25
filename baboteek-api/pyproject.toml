@@ -1,5 +1,5 @@
 [project]
-name = "baboteek-backend"
+name = "baboteek-api"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"

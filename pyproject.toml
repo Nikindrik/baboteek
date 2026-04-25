@@ -1,9 +1,17 @@
 [project]
 name = "baboteek"
 version = "0.1.0"
+dependencies = [
+    "baboteek-api",
+    "baboteek-core",
+]
 
 [tool.uv.workspace]
 members = [
     "baboteek-core",
-    "baboteek-backend",
+    "baboteek-api",
 ]
+
+[tool.uv.sources]
+baboteek-core = { workspace = true }
+baboteek-api = { workspace = true }

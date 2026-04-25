@@ -2,13 +2,6 @@ version = 1
 revision = 3
 requires-python = ">=3.14"
 
-[manifest]
-members = [
-    "baboteek",
-    "baboteek-api",
-    "baboteek-core",
-]
-
 [[package]]
 name = "annotated-doc"
 version = "0.0.4"
@@ -40,24 +33,9 @@ wheels = [
 ]
 
 [[package]]
-name = "baboteek"
+name = "baboteek-backend"
 version = "0.1.0"
 source = { virtual = "." }
-dependencies = [
-    { name = "baboteek-api" },
-    { name = "baboteek-core" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "baboteek-api", editable = "baboteek-api" },
-    { name = "baboteek-core", editable = "baboteek-core" },
-]
-
-[[package]]
-name = "baboteek-api"
-version = "0.1.0"
-source = { editable = "baboteek-api" }
 dependencies = [
     { name = "fastapi" },
     { name = "passlib", extra = ["bcrypt"] },
@@ -76,11 +54,6 @@ requires-dist = [
     { name = "python-multipart", specifier = ">=0.0.26" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.46.0" },
 ]
-
-[[package]]
-name = "baboteek-core"
-version = "0.1.0"
-source = { editable = "baboteek-core" }
 
 [[package]]
 name = "bcrypt"
