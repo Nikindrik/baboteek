@@ -1,52 +1,62 @@
-from baboteek_core.lexical import create_default_lexer
-from baboteek_core.syntax import SyntaxAnalyzer
-from baboteek_core.semantic import SemanticAnalyzer
-from baboteek_api.compiler.models import CompileResult, ErrorDetail
+from fastapi import HTTPException, status
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from baboteek_api.compiler.models import CompilationHistory
+from baboteek_api.compiler.schemas import CompileRequest, CompileResultResponse, ErrorDetail
 
 
-def run_compiler_pipeline(source_code: str) -> CompileResult:
-    lexer = create_default_lexer(source_code)
-    lex_res = lexer.tokenize()
-    if not lex_res.is_success:
-        return CompileResult(
-            stage="lexical",
-            is_success=False,
-            errors=[
-                ErrorDetail(
-                    message=e.message, row=e.row, column=e.column, token_value=None
-                )
-                for e in lex_res.errors
-            ],
-        )
-
-    parser = SyntaxAnalyzer(lex_res.tokens)
-    syn_res = parser.parse()
-    if not syn_res.is_success:
-        return CompileResult(
-            stage="syntax",
-            is_success=False,
-            errors=[
-                ErrorDetail(
-                    message=syn_res.error.message,
-                    row=syn_res.error.row,
-                    column=syn_res.error.column,
-                    token_value=syn_res.error.token_value,
-                )
-            ],
-        )
-
-    sem = SemanticAnalyzer(lex_res.tokens)
-    sem_res = sem.analyze()
-    if not sem_res.is_success:
-        return CompileResult(
-            stage="semantic",
-            is_success=False,
-            errors=[
-                ErrorDetail(message=e.message, row=e.row, column=e.column)
-                for e in sem_res.errors
-            ],
-        )
-
-    return CompileResult(
-        stage="success", is_success=True, message="Compilation successful"
+async def check_ip_limit(db: AsyncSession, ip_address: str) -> None:
+    result = await db.execute(
+        select(func.count(CompilationHistory.id))
+        .where(CompilationHistory.ip_address == ip_address)
+        .where(CompilationHistory.user_id.is_(None)),
     )
+    count = result.scalar() or 0
+    if count >= 5:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Free compilation limit reached. Please register to continue.",
+        )
+
+
+async def run_and_save(
+    db: AsyncSession,
+    code_data: CompileRequest,
+    ip_address: str,
+    user_id: int | None = None,
+) -> CompileResultResponse:
+    # 1. Если пользователь не авторизован, проверяем лимит по IP
+    if user_id is None:
+        await check_ip_limit(db, ip_address)
+
+    core_result = run_compiler_pipeline(code_data.code)
+
+    history_entry = CompilationHistory(
+        user_id=user_id,
+        ip_address=ip_address,
+        code=code_data.code,
+        is_success=core_result.is_success,
+        stage=core_result.stage,
+    )
+    db.add(history_entry)
+    await db.commit()
+
+    return CompileResultResponse(
+        stage=core_result.stage,
+        is_success=core_result.is_success,
+        message=core_result.message,
+        errors=[
+            ErrorDetail(message=e.message, row=e.row, column=e.column, token_value=e.token_value)
+            for e in core_result.errors
+        ],
+    )
+
+
+async def get_user_history(db: AsyncSession, user_id: int) -> list[CompilationHistory]:
+    result = await db.execute(
+        select(CompilationHistory)
+        .where(CompilationHistory.user_id == user_id)
+        .order_by(CompilationHistory.created_at.desc()),
+    )
+    return list(result.scalars().all())

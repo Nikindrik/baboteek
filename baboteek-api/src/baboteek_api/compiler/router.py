@@ -1,21 +1,40 @@
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from typing import Annotated
 
-from baboteek_api.compiler.models import CompileResult
-from baboteek_api.compiler.service import run_compiler_pipeline
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from baboteek_api.auth.dependencies import get_current_user_optional, get_current_user_required
+from baboteek_api.compiler import service
+from baboteek_api.compiler.schemas import CompileRequest, CompileResultResponse, HistoryItemResponse
+from baboteek_api.database import get_db
+from baboteek_api.models import User
 
 router = APIRouter(prefix="/compiler", tags=["compiler"])
 
 
-class CompileRequest(BaseModel):
-    code: str
+@router.post("/compile", response_model=CompileResultResponse)
+async def compile_code(
+    request: CompileRequest,
+    http_request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User | None, Depends(get_current_user_optional)],
+):
+    client_ip = http_request.client.host if http_request.client else "127.0.0.1"
 
+    user_id = current_user.id if current_user else None
 
-@router.post("/compile", response_model=CompileResult)
-async def compile_code(request: CompileRequest):
-    result = run_compiler_pipeline(request.code)
+    result = await service.run_and_save(db=db, code_data=request, ip_address=client_ip, user_id=user_id)
 
     if not result.is_success:
         raise HTTPException(status_code=400, detail=result.model_dump())
 
     return result
+
+
+@router.get("/history")
+async def get_history(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user_required)],
+) -> list[HistoryItemResponse]:
+    """Возвращает историю компиляций только для авторизованного пользователя."""
+    return await service.get_user_history(db, current_user.id)
