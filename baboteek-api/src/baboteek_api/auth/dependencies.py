@@ -4,9 +4,9 @@ from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from baboteek_api.auth.models import User
 from baboteek_api.config import settings
 from baboteek_api.database import get_db
-from baboteek_api.models import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 

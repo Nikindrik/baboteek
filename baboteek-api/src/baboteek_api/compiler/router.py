@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from baboteek_api.auth.dependencies import get_current_user_optional, get_current_user_required
+from baboteek_api.auth.models import User
 from baboteek_api.compiler import service
 from baboteek_api.compiler.schemas import CompileRequest, CompileResultResponse, HistoryItemResponse
 from baboteek_api.database import get_db
-from baboteek_api.models import User
 
 router = APIRouter(prefix="/compiler", tags=["compiler"])
 

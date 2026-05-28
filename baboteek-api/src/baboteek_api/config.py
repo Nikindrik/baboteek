@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
 
+    free_compile_limit: int = 5
+
     database_url: str
 
     model_config = SettingsConfigDict(env_file="app.env")

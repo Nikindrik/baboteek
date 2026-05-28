@@ -14,10 +14,10 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
     yield
 
+
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
 app.include_router(auth.router)
 app.include_router(compiler.router)
-
 
 
 if __name__ == "__main__":
