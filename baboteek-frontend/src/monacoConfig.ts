@@ -1,4 +1,4 @@
-import { Monaco } from "@monaco-editor/react";
+import type { Monaco } from "@monaco-editor/react";
 
 export const configureBaboteekLanguage = (monaco: Monaco) => {
   monaco.languages.register({ id: "baboteek" });
@@ -36,7 +36,7 @@ export const configureBaboteekLanguage = (monaco: Monaco) => {
         ],
         [/[{}()[\]]/, "bracket"],
         [
-          /[<>:=!+-*/]+/,
+          /[<>:=!+*/-]+/,
           {
             cases: {
               "@operators": "operator",
