@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "Compiler API"
+
     secret_key: str
     algorithm: str = "HS256"
 
