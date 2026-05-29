@@ -1,6 +1,7 @@
+from baboteek_api.compiler.service import get_all_examples, create_code_example
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from baboteek_api.auth.dependencies import (
@@ -13,6 +14,8 @@ from baboteek_api.compiler.schemas import (
     CompileRequest,
     CompileResultResponse,
     HistoryItemResponse,
+    CodeExampleCreate,
+    CodeExampleResponse,
 )
 from baboteek_api.database import get_db
 
@@ -47,3 +50,19 @@ async def get_history(
 ) -> list[HistoryItemResponse]:
     """Возвращает историю компиляций только для авторизованного пользователя."""
     return await service.get_user_history(db, current_user.id)
+
+
+@router.get("/examples")
+async def list_examples(
+    db: AsyncSession = Depends(get_db),
+) -> list[CodeExampleResponse]:
+    return await get_all_examples(db)
+
+
+@router.post("/examples", status_code=status.HTTP_201_CREATED)
+async def add_example(
+    data: CodeExampleCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user_required),
+) -> CodeExampleResponse:
+    return await create_code_example(db, data)

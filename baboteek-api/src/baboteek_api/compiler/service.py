@@ -5,18 +5,18 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from baboteek_api.compiler.models import CompilationHistory
+from baboteek_api.compiler.models import CompilationHistory, CodeExample
 from baboteek_api.compiler.schemas import (
     CompileRequest,
     CompileResultResponse,
     ErrorDetail,
     HistoryItemResponse,
+    CodeExampleResponse,
+    CodeExampleCreate,
 )
 
 
 def _run_compiler_pipeline(source_code: str) -> CompileResultResponse:
-    """Внутренний оркестратор, собирающий пайплайн из ядра компилятора."""
-
     lexer = create_default_lexer(source_code)
     lex_res = lexer.tokenize()
     if not lex_res.is_success:
@@ -88,14 +88,11 @@ async def run_and_save(
     ip_address: str,
     user_id: int | None = None,
 ) -> CompileResultResponse:
-    # 1. Если гость, проверяем лимит
     if user_id is None:
         await check_ip_limit(db, ip_address)
 
-    # 2. Запуск локального пайплайна
     result = _run_compiler_pipeline(code_data.code)
 
-    # 3. Сохранение попытки в БД
     history_entry = CompilationHistory(
         user_id=user_id,
         ip_address=ip_address,
@@ -117,3 +114,41 @@ async def get_user_history(db: AsyncSession, user_id: int) -> list[HistoryItemRe
     )
     db_history = result.scalars().all()
     return [HistoryItemResponse.model_validate(item) for item in db_history]
+
+
+async def get_all_examples(db: AsyncSession) -> list[CodeExampleResponse]:
+    result = await db.execute(select(CodeExample).order_by(CodeExample.id.asc()))
+    db_examples = result.scalars().all()
+    return [CodeExampleResponse.model_validate(item) for item in db_examples]
+
+
+async def create_code_example(
+    db: AsyncSession, data: CodeExampleCreate
+) -> CodeExampleResponse:
+    compile_result = _run_compiler_pipeline(data.code)
+
+    if not compile_result.is_success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "message": "Cannot add invalid code to examples catalog.",
+                "stage": compile_result.stage,
+                "errors": [err.model_dump() for err in compile_result.errors],
+            },
+        )
+
+    existing = await db.execute(
+        select(CodeExample).where(CodeExample.title == data.title)
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Example with this title already exists",
+        )
+
+    new_example = CodeExample(
+        title=data.title, code=data.code, description=data.description
+    )
+    db.add(new_example)
+    await db.commit()
+    return CodeExampleResponse.model_validate(new_example)
