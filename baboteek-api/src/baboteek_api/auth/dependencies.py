@@ -18,7 +18,9 @@ async def get_current_user_optional(
     if not token:
         return None
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        payload = jwt.decode(
+            token, settings.secret_key, algorithms=[settings.algorithm]
+        )
         username: str = payload.get("sub")
         if username is None:
             return None
@@ -29,7 +31,9 @@ async def get_current_user_optional(
     return result.scalar_one_or_none()
 
 
-async def get_current_user_required(user: User | None = Depends(get_current_user_optional)) -> User:  # noqa: B008
+async def get_current_user_required(
+    user: User | None = Depends(get_current_user_optional),
+) -> User:  # noqa: B008
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

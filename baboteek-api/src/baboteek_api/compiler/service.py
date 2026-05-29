@@ -6,7 +6,12 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from baboteek_api.compiler.models import CompilationHistory
-from baboteek_api.compiler.schemas import CompileRequest, CompileResultResponse, ErrorDetail, HistoryItemResponse
+from baboteek_api.compiler.schemas import (
+    CompileRequest,
+    CompileResultResponse,
+    ErrorDetail,
+    HistoryItemResponse,
+)
 
 
 def _run_compiler_pipeline(source_code: str) -> CompileResultResponse:
@@ -19,7 +24,10 @@ def _run_compiler_pipeline(source_code: str) -> CompileResultResponse:
             stage="lexical",
             is_success=False,
             errors=[
-                ErrorDetail(message=e.message, row=e.row, column=e.column, token_value=None) for e in lex_res.errors
+                ErrorDetail(
+                    message=e.message, row=e.row, column=e.column, token_value=None
+                )
+                for e in lex_res.errors
             ],
         )
 
@@ -30,7 +38,14 @@ def _run_compiler_pipeline(source_code: str) -> CompileResultResponse:
         return CompileResultResponse(
             stage="syntax",
             is_success=False,
-            errors=[ErrorDetail(message=err.message, row=err.row, column=err.column, token_value=err.token_value)],
+            errors=[
+                ErrorDetail(
+                    message=err.message,
+                    row=err.row,
+                    column=err.column,
+                    token_value=err.token_value,
+                )
+            ],
         )
 
     sem = SemanticAnalyzer(lex_res.tokens)
@@ -40,11 +55,16 @@ def _run_compiler_pipeline(source_code: str) -> CompileResultResponse:
             stage="semantic",
             is_success=False,
             errors=[
-                ErrorDetail(message=e.message, row=e.row, column=e.column, token_value=None) for e in sem_res.errors
+                ErrorDetail(
+                    message=e.message, row=e.row, column=e.column, token_value=None
+                )
+                for e in sem_res.errors
             ],
         )
 
-    return CompileResultResponse(stage="success", is_success=True, message="Compilation successful", errors=[])
+    return CompileResultResponse(
+        stage="success", is_success=True, message="Compilation successful", errors=[]
+    )
 
 
 async def check_ip_limit(db: AsyncSession, ip_address: str) -> None:

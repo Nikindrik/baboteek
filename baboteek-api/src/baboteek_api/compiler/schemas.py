@@ -30,3 +30,19 @@ class HistoryItemResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class CodeExampleResponse(BaseModel):
+    id: int
+    title: str
+    code: str
+    description: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
+class CodeExampleCreate(BaseModel):
+    title: str
+    code: str
+    description: str | None = None
