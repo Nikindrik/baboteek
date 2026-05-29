@@ -20,3 +20,11 @@ class CompilationHistory(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     user: Mapped[User] = relationship()
+
+class CodeExample(Base):
+    __tablename__ = "code_examples"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    code: Mapped[str] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(String(255), nullable=True)
