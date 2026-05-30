@@ -13,9 +13,10 @@ import {
   CheckCircle,
   Clock,
   Save,
+  Lock,
 } from "lucide-react";
 import { API_URL } from "./config";
-import { GRAMMAR_RULES } from "./constants";
+import { LEXICAL_RULES, BNF_RULES, DEFAULT_CODE } from "./constants";
 import { configureBaboteekLanguage } from "./monacoConfig";
 
 interface ErrorDetail {
@@ -48,7 +49,7 @@ interface CodeExample {
 }
 
 export default function App() {
-  const [code, setCode] = useState<string>("program\nvar x: int;\nbegin\n    x := 10;\nend.");
+  const [code, setCode] = useState<string>(DEFAULT_CODE); // Дефолтный код из ТЗ
   const [result, setResult] = useState<CompileResult | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [examples, setExamples] = useState<CodeExample[]>([]);
@@ -63,6 +64,9 @@ export default function App() {
   // Боковые панели
   const [showGrammar, setShowGrammar] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
+
+  // Ограничение лимита (Попап регистрации)
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   // Сохранение примера
   const [isSavingExample, setIsSavingExample] = useState(false);
@@ -117,8 +121,13 @@ export default function App() {
         setHistory(historyRes.data);
       }
     } catch (err: unknown) {
-      if (axios.isAxiosError(err) && err.response && err.response.data) {
-        setResult(err.response.data.detail);
+      if (axios.isAxiosError(err) && err.response) {
+        // Защита от синего экрана при превышении лимита 403 Forbidden
+        if (err.response.status === 403) {
+          setShowLimitModal(true);
+        } else if (err.response.data && err.response.data.detail) {
+          setResult(err.response.data.detail);
+        }
       } else {
         alert("Server error occurred during compilation");
       }
@@ -141,13 +150,12 @@ export default function App() {
         }
       );
 
-      // Успешный исход
       setExampleStatus({
         type: "success",
         message: `Пример "${res.data.title}" успешно прошел компиляцию и добавлен в каталог!`,
       });
       setExampleForm({ title: "", description: "" });
-      fetchExamples(); // Обновляем список на клиенте
+      fetchExamples();
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && err.response && err.response.data) {
         const detail = err.response.data.detail;
@@ -186,6 +194,7 @@ export default function App() {
         setUsername(authForm.username);
         setAuthMode(null);
         setAuthForm({ username: "", password: "" });
+        setShowLimitModal(false); // Закрываем попап лимита, если юзер вошел
       }
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && err.response) {
@@ -272,22 +281,51 @@ export default function App() {
 
       {/* Рабочее пространство */}
       <main className="flex flex-1 overflow-hidden">
-        {/* Боковая панель: Грамматика */}
+        {/* Боковая панель: Красивая Грамматика */}
         {showGrammar && (
-          <div className="w-96 border-r border-slate-800 bg-slate-900 p-6 overflow-y-auto relative animate-fade-in">
+          <div className="w-[450px] border-r border-slate-800 bg-slate-900 p-6 overflow-y-auto relative animate-fade-in flex flex-col">
             <button
               onClick={() => setShowGrammar(false)}
-              className="absolute top-4 right-4 p-1 hover:bg-slate-800 rounded-md"
+              className="absolute top-4 right-4 p-1 hover:bg-slate-800 rounded-md text-slate-400 hover:text-white"
             >
               <X className="w-4 h-4" />
             </button>
-            <h3 className="font-bold text-lg text-rose-500 mb-4 flex items-center space-x-2">
-              <BookOpen className="w-5 h-5" />
-              <span>Правила языка</span>
+            
+            <h3 className="font-bold text-xl text-rose-500 mb-6 flex items-center space-x-2 border-b border-slate-800 pb-3">
+              <BookOpen className="w-6 h-6" />
+              <span>Справочник языка</span>
             </h3>
-            <pre className="text-xs font-mono text-slate-300 whitespace-pre-wrap leading-relaxed">
-              {GRAMMAR_RULES}
-            </pre>
+
+            <div className="space-y-6 flex-1 pr-1">
+              {/* Лексика */}
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-rose-400 mb-3">{LEXICAL_RULES.title}</h4>
+                <div className="space-y-2.5">
+                  {LEXICAL_RULES.rules.map((rule, idx) => (
+                    <div key={idx} className="bg-slate-950/60 border border-slate-800/80 p-3 rounded-lg">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-slate-300">{rule.name}</span>
+                        <code className="text-[10px] font-mono bg-rose-500/10 text-rose-400 px-1.5 py-0.5 rounded border border-rose-500/20">{rule.value}</code>
+                      </div>
+                      {rule.desc && <span className="text-[11px] text-slate-500 block">{rule.desc}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* BNF Синтаксис */}
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-sky-400 mb-3">{BNF_RULES.title}</h4>
+                <div className="space-y-2.5 font-mono text-xs">
+                  {BNF_RULES.rules.map((rule, idx) => (
+                    <div key={idx} className="bg-slate-950/60 border border-slate-800/80 p-3 rounded-lg leading-relaxed">
+                      <span className="text-sky-400 font-bold block mb-1">{rule.name} ::=</span>
+                      <span className="text-slate-300 block break-words">{rule.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -468,6 +506,50 @@ export default function App() {
         )}
       </main>
 
+      {/* Модалка: Превышение Лимита (Просьба зарегистрироваться) */}
+      {showLimitModal && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-slate-900 border border-slate-800 p-8 rounded-xl w-[400px] text-center shadow-2xl relative">
+            <button
+              onClick={() => setShowLimitModal(false)}
+              className="absolute top-4 right-4 p-1 hover:bg-slate-800 rounded-md text-slate-400 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="w-16 h-16 bg-rose-500/10 border border-rose-500/20 rounded-full flex items-center justify-center mx-auto text-rose-500 mb-6 shadow-lg shadow-rose-500/10">
+              <Lock className="w-8 h-8 animate-pulse" />
+            </div>
+
+            <h3 className="font-bold text-xl text-slate-100 mb-2">Лимит гостевого доступа</h3>
+            <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+              Вы исчерпали лимит бесплатных проверок кода без регистрации. Создайте аккаунт, чтобы продолжить компилировать без ограничений и сохранять историю!
+            </p>
+
+            <div className="flex flex-col space-y-2.5">
+              <button
+                onClick={() => {
+                  setShowLimitModal(false);
+                  setAuthMode("register");
+                }}
+                className="w-full py-3 bg-rose-600 hover:bg-rose-500 rounded-lg font-semibold text-sm transition shadow-lg shadow-rose-600/20"
+              >
+                Создать аккаунт бесплатно
+              </button>
+              <button
+                onClick={() => {
+                  setShowLimitModal(false);
+                  setAuthMode("login");
+                }}
+                className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg font-semibold text-sm transition"
+              >
+                У меня уже есть профиль
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Модалка: Создание Примера */}
       {isSavingExample && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center z-50">
@@ -527,7 +609,6 @@ export default function App() {
                 </button>
               </form>
             ) : exampleStatus.type === "success" ? (
-              // Красивое зеленое уведомление об успехе
               <div className="space-y-6 text-center py-4">
                 <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto text-emerald-400 shadow-lg shadow-emerald-500/10">
                   <CheckCircle className="w-8 h-8" />
@@ -547,7 +628,6 @@ export default function App() {
                 </button>
               </div>
             ) : (
-              // Красивое красное окно ошибки с деталями компиляции
               <div className="space-y-6">
                 <div className="flex items-start space-x-3 text-rose-400 bg-rose-500/5 p-4 rounded-lg border border-rose-500/20">
                   <AlertTriangle className="w-6 h-6 shrink-0" />
